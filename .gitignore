@@ -1,0 +1,16 @@
+.env
+*.local
+node_modules/
+.next/
+.vercel/
+dist/
+coverage/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+/.parcel-cache
+/.pnp
+/.pnp.js
+*.tgz
+build/
+/.cache

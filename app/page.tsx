@@ -9,12 +9,21 @@ type LinkItem = {
   category?: string;
   status?: string;
   url?: string;
+  image_url?: string;
+  sub_type?: string;
+  created_at?: string;
+  submitter_name?: string;
+  submitter_email?: string;
+  submitter_hint?: string;
 };
 
 type ProfileItem = {
   id: string;
   email?: string;
   full_name?: string;
+  role?: string;
+  avatar_url?: string;
+  created_at?: string;
 };
 
 export default function HomePage() {
@@ -26,6 +35,12 @@ export default function HomePage() {
   const [profiles, setProfiles] = useState<ProfileItem[]>([]);
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState('overview');
+  const [isMobile, setIsMobile] = useState(false);
+  const [selectedProfileId, setSelectedProfileId] = useState('');
+  const [profileName, setProfileName] = useState('');
+  const [profileEmail, setProfileEmail] = useState('');
+  const [profilePassword, setProfilePassword] = useState('');
+  const [savingProfile, setSavingProfile] = useState(false);
 
   const pendingCount = useMemo(() => links.filter((link) => link.status === 'pending').length, [links]);
   const approvedCount = useMemo(() => links.filter((link) => link.status === 'approved').length, [links]);
@@ -37,6 +52,11 @@ export default function HomePage() {
       setIsLoggedIn(true);
       void loadData();
     }
+
+    const handleResize = () => setIsMobile(window.innerWidth < 900);
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   async function loadData() {
@@ -76,8 +96,9 @@ export default function HomePage() {
       if (!loaded) {
         setIsLoggedIn(false);
       }
-    } catch (err: any) {
-      setError(err.message || 'Login failed');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Login failed';
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -100,8 +121,10 @@ export default function HomePage() {
       const result = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(result.error || 'Approval failed');
       await loadData();
-    } catch (err: any) {
-      setError(err.message || 'Approval failed');
+      setError('');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Approval failed';
+      setError(message);
     }
   }
 
@@ -115,13 +138,66 @@ export default function HomePage() {
       const result = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(result.error || 'Rejection failed');
       await loadData();
-    } catch (err: any) {
-      setError(err.message || 'Rejection failed');
+      setError('');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Rejection failed';
+      setError(message);
+    }
+  }
+
+  function selectProfile(profile: ProfileItem) {
+    setSelectedProfileId(profile.id);
+    setProfileName(profile.full_name || '');
+    setProfileEmail(profile.email || '');
+    setProfilePassword('');
+  }
+
+  async function saveProfile() {
+    if (!selectedProfileId) return;
+    setSavingProfile(true);
+    setError('');
+
+    try {
+      const response = await fetch(`/api/admin/users/${selectedProfileId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fullName: profileName, email: profileEmail, password: profilePassword || undefined }),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.error || 'Profile update failed');
+      await loadData();
+      setProfilePassword('');
+      setError('');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Profile update failed';
+      setError(message);
+    } finally {
+      setSavingProfile(false);
+    }
+  }
+
+  function getPreviewUrl(link: LinkItem) {
+    if (link.image_url) return link.image_url;
+    try {
+      const domain = new URL(link.url || '').hostname;
+      return `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
+    } catch {
+      return 'https://images.unsplash.com/photo-1495020689067-958852a7765e?auto=format&fit=crop&w=200&q=80';
     }
   }
 
   return (
     <main style={{ minHeight: '100vh', background: '#0f172a', color: '#f8fafc' }}>
+      <style jsx global>{`
+        * { box-sizing: border-box; }
+        body { margin: 0; font-family: Arial, sans-serif; }
+        @media (max-width: 900px) {
+          .dashboard-shell { flex-direction: column !important; }
+          .sidebar { width: 100% !important; border-right: none !important; border-bottom: 1px solid #1e293b; }
+          .content-section { padding: 16px !important; }
+        }
+      `}</style>
+
       {!isLoggedIn ? (
         <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
           <div style={{ width: '100%', maxWidth: 460, background: '#111827', borderRadius: 24, padding: 32, border: '1px solid #334155' }}>
@@ -144,8 +220,8 @@ export default function HomePage() {
           </div>
         </div>
       ) : (
-        <div style={{ display: 'flex', minHeight: '100vh' }}>
-          <aside style={{ width: 260, borderRight: '1px solid #1e293b', background: '#111827', padding: 20 }}>
+        <div className="dashboard-shell" style={{ display: 'flex', minHeight: '100vh' }}>
+          <aside className="sidebar" style={{ width: 280, borderRight: '1px solid #1e293b', background: '#111827', padding: 20, position: isMobile ? 'static' : 'sticky', top: 0, height: isMobile ? 'auto' : '100vh' }}>
             <h2 style={{ margin: '0 0 24px', fontSize: 20 }}>UfaqTech Admin</h2>
             <nav style={{ display: 'grid', gap: 8 }}>
               {['overview', 'moderation', 'users', 'categories'].map((tab) => (
@@ -161,10 +237,12 @@ export default function HomePage() {
               <button onClick={handleLogout} style={{ ...buttonStyle, background: '#be123c', width: '100%' }}>Disconnect Console</button>
             </div>
           </aside>
-          <section style={{ flex: 1, padding: 24, overflow: 'auto' }}>
+          <section className="content-section" style={{ flex: 1, padding: 24, overflow: 'auto' }}>
+            {error ? <div style={{ marginBottom: 16, padding: '10px 12px', background: '#7f1d1d', borderRadius: 12, color: '#fecaca' }}>{error}</div> : null}
+
             {activeTab === 'overview' && (
               <div style={{ display: 'grid', gap: 20 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
                   <div>
                     <h1 style={{ margin: 0, fontSize: 28 }}>System Performance</h1>
                     <p style={{ margin: '6px 0 0', color: '#94a3b8' }}>Real-time indicators across SocialHub databases.</p>
@@ -183,6 +261,23 @@ export default function HomePage() {
                     </div>
                   ))}
                 </div>
+                <div style={{ background: '#111827', borderRadius: 20, border: '1px solid #334155', padding: 20 }}>
+                  <h3 style={{ marginTop: 0 }}>Latest submissions</h3>
+                  <div style={{ display: 'grid', gap: 12 }}>
+                    {links.slice(0, 4).map((link) => (
+                      <div key={link.id} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', padding: '10px 0', borderBottom: '1px solid #1e293b' }}>
+                        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                          <img src={getPreviewUrl(link)} alt={link.title || 'link preview'} style={{ width: 44, height: 44, borderRadius: 10, objectFit: 'cover' }} />
+                          <div>
+                            <div style={{ fontWeight: 700 }}>{link.title || link.url}</div>
+                            <div style={{ color: '#94a3b8', fontSize: 13 }}>{link.submitter_name || link.submitter_email || 'Unknown user'} • {link.platform}</div>
+                          </div>
+                        </div>
+                        <span style={{ color: link.status === 'approved' ? '#34d399' : '#f59e0b', fontSize: 13, textTransform: 'capitalize' }}>{link.status}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             )}
 
@@ -190,7 +285,7 @@ export default function HomePage() {
               <div style={{ display: 'grid', gap: 16 }}>
                 <h1 style={{ margin: 0, fontSize: 28 }}>Moderation Engine</h1>
                 <div style={{ background: '#111827', borderRadius: 20, border: '1px solid #334155', overflow: 'hidden' }}>
-                  <div style={{ padding: 16, borderBottom: '1px solid #1e293b', display: 'flex', justifyContent: 'space-between' }}>
+                  <div style={{ padding: 16, borderBottom: '1px solid #1e293b', display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
                     <strong>Pending Submissions</strong>
                     <span style={{ color: '#f59e0b' }}>{pendingCount} waiting</span>
                   </div>
@@ -199,10 +294,14 @@ export default function HomePage() {
                   ) : (
                     <div style={{ display: 'grid' }}>
                       {links.filter((link) => link.status === 'pending').map((link) => (
-                        <div key={link.id} style={{ padding: 16, borderBottom: '1px solid #1e293b', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <div>
-                            <div style={{ fontWeight: 700 }}>{link.title || link.url}</div>
-                            <div style={{ color: '#94a3b8', fontSize: 13 }}>{link.platform} • {link.category}</div>
+                        <div key={link.id} style={{ padding: 16, borderBottom: '1px solid #1e293b', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                          <div style={{ display: 'flex', gap: 12, alignItems: 'center', minWidth: 240 }}>
+                            <img src={getPreviewUrl(link)} alt={link.title || 'preview'} style={{ width: 54, height: 54, borderRadius: 12, objectFit: 'cover' }} />
+                            <div>
+                              <div style={{ fontWeight: 700 }}>{link.title || link.url}</div>
+                              <div style={{ color: '#94a3b8', fontSize: 13 }}>{link.platform} • {link.category}</div>
+                              <div style={{ color: '#38bdf8', fontSize: 12, marginTop: 4 }}>{link.submitter_name || link.submitter_email || 'Unknown user'}{link.submitter_hint ? ` • ${link.submitter_hint}` : ''}</div>
+                            </div>
                           </div>
                           <div style={{ display: 'flex', gap: 8 }}>
                             <button onClick={() => approveLink(link.id)} style={{ ...smallButtonStyle, background: '#16a34a' }}>Approve</button>
@@ -220,18 +319,40 @@ export default function HomePage() {
               <div style={{ display: 'grid', gap: 16 }}>
                 <h1 style={{ margin: 0, fontSize: 28 }}>User Management Hub</h1>
                 <div style={{ background: '#111827', borderRadius: 20, border: '1px solid #334155', overflow: 'hidden' }}>
-                  <div style={{ padding: 16, borderBottom: '1px solid #1e293b', display: 'flex', justifyContent: 'space-between' }}>
+                  <div style={{ padding: 16, borderBottom: '1px solid #1e293b', display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
                     <strong>Registered Profiles</strong>
                     <span>{profiles.length} profiles</span>
                   </div>
                   <div style={{ display: 'grid' }}>
                     {profiles.map((profile) => (
-                      <div key={profile.id} style={{ padding: 16, borderBottom: '1px solid #1e293b', display: 'flex', justifyContent: 'space-between' }}>
-                        <div>{profile.full_name || profile.email}</div>
-                        <div style={{ color: '#94a3b8' }}>{profile.email}</div>
+                      <div key={profile.id} style={{ padding: 16, borderBottom: '1px solid #1e293b', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                        <div>
+                          <div style={{ fontWeight: 700 }}>{profile.full_name || profile.email}</div>
+                          <div style={{ color: '#94a3b8', fontSize: 13 }}>{profile.email}</div>
+                        </div>
+                        <button onClick={() => selectProfile(profile)} style={{ ...smallButtonStyle, background: '#2563eb' }}>Edit</button>
                       </div>
                     ))}
                   </div>
+                </div>
+
+                <div style={{ background: '#111827', borderRadius: 20, border: '1px solid #334155', padding: 20, display: 'grid', gap: 12 }}>
+                  <h3 style={{ margin: 0 }}>Edit Profile</h3>
+                  <label style={{ display: 'grid', gap: 6 }}>
+                    <span style={{ color: '#94a3b8', fontSize: 13 }}>Full Name</span>
+                    <input value={profileName} onChange={(e) => setProfileName(e.target.value)} style={inputStyle} placeholder="Full name" />
+                  </label>
+                  <label style={{ display: 'grid', gap: 6 }}>
+                    <span style={{ color: '#94a3b8', fontSize: 13 }}>Email</span>
+                    <input value={profileEmail} onChange={(e) => setProfileEmail(e.target.value)} type="email" style={inputStyle} placeholder="user@example.com" />
+                  </label>
+                  <label style={{ display: 'grid', gap: 6 }}>
+                    <span style={{ color: '#94a3b8', fontSize: 13 }}>New Password (optional)</span>
+                    <input value={profilePassword} onChange={(e) => setProfilePassword(e.target.value)} type="password" style={inputStyle} placeholder="Leave blank to keep unchanged" />
+                  </label>
+                  <button onClick={saveProfile} disabled={savingProfile || !selectedProfileId} style={{ ...buttonStyle, opacity: savingProfile ? 0.8 : 1, width: 'fit-content' }}>
+                    {savingProfile ? 'Updating...' : 'Save Changes'}
+                  </button>
                 </div>
               </div>
             )}

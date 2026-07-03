@@ -1,6 +1,13 @@
 import { getSupabaseAdminClient } from '../../../lib/supabaseAdmin';
+import { requireAdmin } from '../../../lib/adminAuth';
 
 export async function GET(req) {
+  try {
+    requireAdmin(req);
+  } catch (res) {
+    return res;
+  }
+
   const supabaseAdmin = getSupabaseAdminClient();
   const url = new URL(req.url);
   const status = url.searchParams.get('status');
@@ -26,6 +33,12 @@ export async function GET(req) {
 }
 
 export async function POST(req) {
+  try {
+    requireAdmin(req);
+  } catch (res) {
+    return res;
+  }
+
   const supabaseAdmin = getSupabaseAdminClient();
   const body = await req.json();
   const { id, action } = body;

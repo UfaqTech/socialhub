@@ -1,6 +1,8 @@
-node_modules
-.next
-out
-.env
-.env.local
-npm-debug.log*
+node_modules/
+build/
+dist/
+coverage/
+.DS_Store
+*.log
+.env*
+!.env.example

@@ -1,0 +1,6 @@
+{
+  "name": "UfaqTech SocialHub Web App",
+  "description": "A premium, responsive directory for WhatsApp, Telegram, and Facebook groups, channels, and pages with user submissions and admin control.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

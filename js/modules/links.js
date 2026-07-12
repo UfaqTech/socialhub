@@ -7,6 +7,51 @@ window.AppModules.links = async function() {
     const mainContent = document.getElementById("main-content");
     let currentFilter = 'all';
 
+    const platformOptions = [
+        { value: 'WhatsApp', label: 'WhatsApp' },
+        { value: 'Telegram', label: 'Telegram' },
+        { value: 'Facebook', label: 'Facebook' }
+    ];
+
+    const subtypeOptions = {
+        WhatsApp: [
+            { value: 'Group', label: 'Group' },
+            { value: 'Community', label: 'Community' },
+            { value: 'Channel', label: 'Channel' }
+        ],
+        Telegram: [
+            { value: 'Channel', label: 'Channel' },
+            { value: 'Group', label: 'Group' },
+            { value: 'Bot', label: 'Bot' }
+        ],
+        Facebook: [
+            { value: 'Page', label: 'Page' },
+            { value: 'Group', label: 'Group' }
+        ]
+    };
+
+    const fallbackCategories = [
+        { value: 'educational', label: 'Educational' },
+        { value: 'programming', label: 'Programming' },
+        { value: 'tech', label: 'Tech' },
+        { value: 'funny', label: 'Funny' },
+        { value: '18plus', label: '18+' },
+        { value: 'entertainment', label: 'Entertainment' },
+        { value: 'business', label: 'Business' },
+        { value: 'marketing', label: 'Marketing' },
+        { value: 'lifestyle', label: 'Lifestyle' },
+        { value: 'health-fitness', label: 'Health & Fitness' },
+        { value: 'news-politics', label: 'News & Politics' },
+        { value: 'gaming', label: 'Gaming' },
+        { value: 'music-arts', label: 'Music & Arts' },
+        { value: 'travel-food', label: 'Travel & Food' },
+        { value: 'science-innovation', label: 'Science & Innovation' },
+        { value: 'finance-investing', label: 'Finance & Investing' },
+        { value: 'spirituality-religion', label: 'Spirituality & Religion' },
+        { value: 'sports', label: 'Sports' },
+        { value: 'memes', label: 'Memes' }
+    ];
+
     // 1. Toggle Link Form Modal Visibility
     const toggleModalVisibility = () => {
         const modal = document.getElementById("edit-link-modal");
@@ -29,9 +74,11 @@ window.AppModules.links = async function() {
         document.getElementById("edit-desc").value = link.description || '';
         document.getElementById("edit-url").value = link.url || '';
         document.getElementById("edit-platform").value = link.platform || '';
+        document.getElementById("edit-subtype").value = link.subtype || link.platform_subtype || '';
         document.getElementById("edit-category").value = link.category || '';
         document.getElementById("edit-members").value = link.member_count || 0;
-        
+
+        populateSubtypeOptions();
         toggleModalVisibility();
     };
 
@@ -47,6 +94,9 @@ window.AppModules.links = async function() {
         
         const platformSelect = document.getElementById("edit-platform");
         const platform = platformSelect.options[platformSelect.selectedIndex]?.text || 'Network';
+        const subtypeSelect = document.getElementById("edit-subtype");
+        const subtype = subtypeSelect?.value ? subtypeSelect.options[subtypeSelect.selectedIndex]?.text : '';
+        const platformLabel = subtype ? `${platform} · ${subtype}` : platform;
         
         const categorySelect = document.getElementById("edit-category");
         const category = categorySelect.options[categorySelect.selectedIndex]?.text || 'general';
@@ -59,7 +109,7 @@ window.AppModules.links = async function() {
                     <img src="${img}" alt="Live Preview Visual" class="w-full h-full object-cover opacity-70" onerror="this.src='https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=500'">
                     <span class="absolute top-3 left-3 px-2 py-0.5 rounded text-[8px] uppercase font-bold border tracking-wider bg-blue-500/10 border-blue-500/20 text-blue-400">LIVE PREVIEW</span>
                     <span class="absolute top-3 right-3 text-[10px] font-mono text-gray-300 bg-slate-950/90 border border-slate-800 px-2 py-0.5 rounded-lg uppercase tracking-wider font-semibold">
-                        ${platform}
+                        ${platformLabel}
                     </span>
                 </div>
                 <div class="p-4 flex-1 flex flex-col justify-between bg-slate-900/30">
@@ -82,10 +132,31 @@ window.AppModules.links = async function() {
         `;
     };
 
+    const populateSubtypeOptions = () => {
+        const platformSelect = document.getElementById("edit-platform");
+        const subtypeSelect = document.getElementById("edit-subtype");
+        if (!platformSelect || !subtypeSelect) return;
+
+        const selectedPlatform = platformSelect.value;
+        const subtypeList = subtypeOptions[selectedPlatform] || [];
+        const currentValue = subtypeSelect.value;
+
+        subtypeSelect.innerHTML = `
+            <option value="" disabled ${!currentValue ? 'selected' : ''}>Select Sub-Type</option>
+            ${subtypeList.map(option => `<option value="${option.value}" ${currentValue === option.value ? 'selected' : ''}>${option.label}</option>`).join('')}
+        `;
+
+        if (!subtypeList.some(option => option.value === currentValue) && subtypeList.length > 0) {
+            subtypeSelect.value = subtypeList[0].value;
+        }
+    };
+
     // 4. Populate Dynamic Categories Dropdown Option List
     const loadCategoriesDropdownOptions = async () => {
         const categorySelect = document.getElementById("edit-category");
         if (!categorySelect) return;
+
+        const currentValue = categorySelect.value || '';
 
         try {
             const { data: categoriesData, error } = await supabase
@@ -95,14 +166,23 @@ window.AppModules.links = async function() {
 
             if (error) throw error;
 
+            const mergedCategories = [...fallbackCategories];
+            const existingSlugs = new Set(mergedCategories.map(cat => cat.value.toLowerCase()));
+
             if (categoriesData && categoriesData.length > 0) {
-                categorySelect.innerHTML = `
-                    <option value="" disabled selected>Select Category Matrix</option>
-                    ${categoriesData.map(cat => `<option value="${cat.slug}">${cat.name}</option>`).join('')}
-                `;
-            } else {
-                categorySelect.innerHTML = `<option value="" disabled>No categories registered</option>`;
+                categoriesData.forEach(cat => {
+                    const slug = (cat.slug || '').trim();
+                    const name = (cat.name || '').trim();
+                    if (!slug || existingSlugs.has(slug.toLowerCase())) return;
+                    mergedCategories.push({ value: slug, label: name });
+                    existingSlugs.add(slug.toLowerCase());
+                });
             }
+
+            categorySelect.innerHTML = `
+                <option value="" disabled ${!currentValue ? 'selected' : ''}>Select Category Matrix</option>
+                ${mergedCategories.map(cat => `<option value="${cat.value}" ${currentValue === cat.value ? 'selected' : ''}>${cat.label}</option>`).join('')}
+            `;
         } catch (err) {
             console.error("Failed to compile category elements:", err);
             categorySelect.innerHTML = `<option value="" disabled>Error loading options</option>`;
@@ -371,25 +451,26 @@ window.AppModules.links = async function() {
                                 <label class="block text-[10px] uppercase tracking-wider text-gray-400 font-semibold mb-1">Description Structural Summary</label>
                                 <textarea id="edit-desc" rows="2" class="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-xs text-white focus:border-blue-500 focus:outline-none resize-none"></textarea>
                             </div>
-                            <div class="grid grid-cols-2 gap-3">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                                 <div>
                                     <label class="block text-[10px] uppercase tracking-wider text-gray-400 font-semibold mb-1">Platform Identity</label>
                                     <select id="edit-platform" required class="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-xs text-white focus:border-blue-500 focus:outline-none">
                                         <option value="" disabled selected>Select Platform</option>
-                                        <option value="WhatsApp">WhatsApp</option>
-                                        <option value="Telegram">Telegram</option>
-                                        <option value="Facebook">Facebook</option>
-                                        <option value="Discord">Discord</option>
-                                        <option value="YouTube">YouTube</option>
-                                        <option value="Website">Website</option>
+                                        ${platformOptions.map(option => `<option value="${option.value}">${option.label}</option>`).join('')}
                                     </select>
                                 </div>
                                 <div>
-                                    <label class="block text-[10px] uppercase tracking-wider text-gray-400 font-semibold mb-1">Category Select Mapping</label>
-                                    <select id="edit-category" required class="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-xs text-white focus:border-blue-500 focus:outline-none">
-                                        <option value="" disabled selected>Loading Matrix...</option>
+                                    <label class="block text-[10px] uppercase tracking-wider text-gray-400 font-semibold mb-1">Sub-Type</label>
+                                    <select id="edit-subtype" required class="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-xs text-white focus:border-blue-500 focus:outline-none">
+                                        <option value="" disabled selected>Select Sub-Type</option>
                                     </select>
                                 </div>
+                            </div>
+                            <div>
+                                <label class="block text-[10px] uppercase tracking-wider text-gray-400 font-semibold mb-1">Category Select Mapping</label>
+                                <select id="edit-category" required class="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-xs text-white focus:border-blue-500 focus:outline-none">
+                                    <option value="" disabled selected>Loading Matrix...</option>
+                                </select>
                             </div>
                             <div>
                                 <label class="block text-[10px] uppercase tracking-wider text-gray-400 font-semibold mb-1">Member Metrics Enrollment Count</label>
@@ -442,6 +523,7 @@ window.AppModules.links = async function() {
         });
 
         loadCategoriesDropdownOptions();
+        populateSubtypeOptions();
 
         // Attach layout preview triggers
         ['edit-url', 'edit-image', 'edit-title', 'edit-desc', 'edit-members'].forEach(fieldId => {
@@ -450,6 +532,11 @@ window.AppModules.links = async function() {
         ['edit-platform', 'edit-category'].forEach(selectId => {
             document.getElementById(selectId).addEventListener('change', updateLivePreview);
         });
+        document.getElementById('edit-platform').addEventListener('change', () => {
+            populateSubtypeOptions();
+            updateLivePreview();
+        });
+        document.getElementById('edit-subtype').addEventListener('change', updateLivePreview);
 
         // Scraper Action Request Configuration Engine
         document.getElementById("btn-fetch-meta").addEventListener("click", async () => {
@@ -480,13 +567,8 @@ window.AppModules.links = async function() {
                         document.getElementById("edit-platform").value = "Telegram";
                     } else if (targetUrl.includes("facebook.com")) {
                         document.getElementById("edit-platform").value = "Facebook";
-                    } else if (targetUrl.includes("discord.gg") || targetUrl.includes("discord.com")) {
-                        document.getElementById("edit-platform").value = "Discord";
-                    } else if (targetUrl.includes("youtube.com") || targetUrl.includes("youtu.be")) {
-                        document.getElementById("edit-platform").value = "YouTube";
-                    } else {
-                        document.getElementById("edit-platform").value = "Website";
                     }
+                    populateSubtypeOptions();
                     updateLivePreview();
                 } else {
                     alert("Could not extract active automated opengraph meta structures.");
@@ -504,6 +586,7 @@ window.AppModules.links = async function() {
         document.getElementById("edit-link-form").addEventListener("submit", async (e) => {
             e.preventDefault();
             const id = document.getElementById("edit-id").value;
+            const subtypeValue = document.getElementById("edit-subtype").value.trim();
             const payload = {
                 image_url: document.getElementById("edit-image").value.trim(),
                 title: document.getElementById("edit-title").value.trim(),
@@ -511,13 +594,27 @@ window.AppModules.links = async function() {
                 url: document.getElementById("edit-url").value.trim(),
                 platform: document.getElementById("edit-platform").value,
                 category: document.getElementById("edit-category").value,
-                member_count: parseInt(document.getElementById("edit-members").value, 10) || 0
+                member_count: parseInt(document.getElementById("edit-members").value, 10) || 0,
+                ...(subtypeValue ? { subtype: subtypeValue } : {})
             };
 
             try {
                 const { data: { user } } = await supabase.auth.getUser();
                 const { error } = await supabase.from('links').update(payload).eq('id', id);
-                if (error) throw error;
+                if (error && subtypeValue && /subtype/i.test(error.message)) {
+                    const { error: fallbackError } = await supabase.from('links').update({
+                        image_url: payload.image_url,
+                        title: payload.title,
+                        description: payload.description,
+                        url: payload.url,
+                        platform: payload.platform,
+                        category: payload.category,
+                        member_count: payload.member_count
+                    }).eq('id', id);
+                    if (fallbackError) throw fallbackError;
+                } else if (error) {
+                    throw error;
+                }
                 await supabase.from('audit_logs').insert({ admin_id: user.id, action: 'EDIT_LINK_PARAMETERS', target_id: id, details: `Updated setup parameters for title: ${payload.title}.` });
                 toggleModalVisibility();
                 fetchCards();

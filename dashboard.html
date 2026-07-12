@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Control Center - UfaqTech SocialHub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Modern Glassmorphism & Custom Nav Active States */
+        .glass-sidebar {
+            background: rgba(11, 15, 25, 0.85);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+        }
+        .nav-active {
+            background: rgba(59, 130, 246, 0.1) !important;
+            border-left: 3px solid #3b82f6;
+            color: #ffffff !important;
+        }
+        .nav-active i {
+            color: #3b82f6 !important;
+        }
+        /* Custom Slim Scrollbar for Sidebar Navigation */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #1e293b;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body class="text-gray-200 min-h-screen bg-[#070a12] font-sans antialiased overflow-x-hidden">
+
+    <!-- 🌟 MOBILE BACKDROP OVERLAY LAYER -->
+    <div id="sidebar-overlay" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-30 opacity-0 pointer-events-none transition-opacity duration-300 md:hidden"></div>
+
+    <!-- 👤 SIDEBAR NAVIGATION FRAME (Fully Responsive Toggle Drawer) -->
+    <aside id="main-sidebar" class="w-64 glass-sidebar border-r border-slate-800/60 flex flex-col fixed inset-y-0 left-0 z-40 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out shadow-2xl shadow-black/50">
+        
+        <!-- Sidebar Branding Header -->
+        <div class="p-5 border-b border-slate-800/60 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center shadow-lg shadow-blue-500/10 border border-blue-500/20">
+                    <img src="logo/UT_social-hub.png" alt="UT Logo" class="w-full h-full object-cover">
+                </div>
+                <div>
+                    <h2 class="font-bold text-white tracking-wide text-sm tech-heading">UfaqTech</h2>
+                    <p class="text-[10px] text-blue-400 uppercase font-semibold tracking-wider">SocialHub Engine</p>
+                </div>
+            </div>
+            <!-- Mobile Close Button inside Sidebar -->
+            <button id="close-sidebar-btn" class="md:hidden text-gray-400 hover:text-white transition p-1 text-sm">
+                <i class="fa-solid fa-arrow-left-long"></i>
+            </button>
+        </div>
+
+        <!-- Admin Profile Identity Cache Section -->
+        <div class="p-4 mx-3 my-4 bg-slate-900/40 rounded-xl border border-slate-800/40 flex items-center gap-3">
+            <div class="w-9 h-9 rounded-full bg-slate-800/80 border border-slate-700/60 flex items-center justify-center text-blue-400 text-sm overflow-hidden flex-shrink-0" id="admin-avatar-box">
+                <i class="fa-solid fa-user-shield"></i>
+            </div>
+            <div class="truncate">
+                <h4 class="text-xs font-semibold text-white truncate" id="admin-name-display">Loading Admin...</h4>
+                <span class="inline-block text-[9px] bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded uppercase tracking-wider font-medium mt-0.5" id="admin-role-display">---</span>
+            </div>
+        </div>
+
+        <!-- Core Navigation Control Hooks -->
+        <nav id="sidebar-nav" class="flex-1 px-3 space-y-1 overflow-y-auto custom-scrollbar">
+            <button data-target="overview" class="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-medium text-gray-400 hover:text-white hover:bg-slate-800/30 transition duration-150 nav-active">
+                <i class="fa-solid fa-chart-pie w-5 text-center text-sm"></i>
+                <span>Dashboard Overview</span>
+            </button>
+
+            <button data-target="links" class="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-medium text-gray-400 hover:text-white hover:bg-slate-800/30 transition duration-150">
+                <i class="fa-solid fa-link w-5 text-center text-sm"></i>
+                <span>Link Moderation</span>
+            </button>
+
+            <button data-target="users" class="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-medium text-gray-400 hover:text-white hover:bg-slate-800/30 transition duration-150">
+                <i class="fa-solid fa-users w-5 text-center text-sm"></i>
+                <span>User Management</span>
+            </button>
+
+            <button id="nav-teams" data-target="teams" class="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-medium text-gray-400 hover:text-white hover:bg-slate-800/30 transition duration-150">
+                <i class="fa-solid fa-user-gear w-5 text-center text-sm"></i>
+                <span>Admin Team</span>
+            </button>
+
+            <button data-target="reports" class="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-medium text-gray-400 hover:text-white hover:bg-slate-800/30 transition duration-150">
+                <i class="fa-solid fa-triangle-exclamation w-5 text-center text-sm"></i>
+                <span>Report Center</span>
+            </button>
+
+            <button data-target="categories" class="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-medium text-gray-400 hover:text-white hover:bg-slate-800/30 transition duration-150">
+                <i class="fa-solid fa-tags w-5 text-center text-sm"></i>
+                <span>Category Manager</span>
+            </button>
+
+            <button data-target="audit" class="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-medium text-gray-400 hover:text-white hover:bg-slate-800/30 transition duration-150">
+                <i class="fa-solid fa-receipt w-5 text-center text-sm"></i>
+                <span>Audit Records</span>
+            </button>
+        </nav>
+
+        <!-- Session Closer Operational Trigger -->
+        <div class="p-4 border-t border-slate-800/60 bg-slate-950/20">
+            <button id="btn-logout" class="w-full flex items-center justify-center gap-2 py-2 bg-slate-900 hover:bg-red-950/20 border border-slate-800 hover:border-red-900/40 text-gray-400 hover:text-red-400 font-medium rounded-xl transition duration-150 text-xs">
+                <i class="fa-solid fa-power-off text-[11px]"></i>
+                <span>Terminate Session</span>
+            </button>
+        </div>
+    </aside>
+
+    <!-- 💻 MAIN DUAL-STAGE APP CONTAINER FRAME -->
+    <div class="flex-1 md:pl-64 min-h-screen flex flex-col w-full transition-all duration-300">
+        
+        <!-- Top Sticky Header Control Layer -->
+        <header class="h-16 border-b border-slate-800/60 px-4 md:px-8 flex items-center justify-between bg-[#070a12]/80 backdrop-blur-md sticky top-0 z-20 shadow-lg shadow-black/10">
+            <div class="flex items-center gap-3.5">
+                <!-- Hamburger Trigger Button for Mobile Screens -->
+                <button id="menu-toggle-btn" class="md:hidden text-gray-400 hover:text-white focus:outline-none transition p-1.5 rounded-lg bg-slate-900 border border-slate-800">
+                    <i class="fa-solid fa-bars-staggered text-sm"></i>
+                </button>
+                <div class="flex items-center gap-2 text-sm text-gray-400">
+                    <span class="text-white font-bold tracking-wide text-xs uppercase" id="current-view-title">Dashboard Overview</span>
+                </div>
+            </div>
+            
+            <!-- ✅ REMOVED 'Env: Production' TEXT - UPGRADED TO MODERN DYNAMIC LIVE NODE BADGE ICON -->
+            <div class="flex items-center">
+                <div class="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-full text-[9px] font-mono tracking-widest text-emerald-400 shadow-inner" title="Environment State: Secure Production Node Cluster">
+                    <i class="fa-solid fa-circle-nodes text-[10px] animate-pulse"></i>
+                    <span class="font-bold uppercase hidden sm:inline-block">Live Cluster</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Core Rendering Dynamic Viewports Content Canvas -->
+        <main id="main-content" class="flex-1 p-4 md:p-8 max-w-7xl w-full mx-auto">
+            <div class="flex flex-col items-center justify-center h-96 text-gray-500">
+                <div class="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mb-3"></div>
+                <p class="text-[10px] tracking-widest uppercase font-mono">Loading Database Data Streams...</p>
+            </div>
+        </main>
+    </div>
+
+    <!-- External CDNs Dependencies Modules Layout -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-client.js"></script>
+    <script src="js/auth.js"></script>
+
+    <!-- Internal Javascript Modules Pipelines Components -->
+    <script src="js/modules/overview.js"></script>
+    <script src="js/modules/links.js"></script>
+    <script src="js/modules/users.js"></script>
+    <script src="js/modules/teams.js"></script>
+    <script src="js/modules/reports.js"></script>
+    <script src="js/modules/categories.js"></script>
+    <script src="js/modules/audit.js"></script>
+
+    <!-- Master Controller Routing Logic Infrastructure Orchestration -->
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const navButtons = document.querySelectorAll("#sidebar-nav button");
+            const mainContent = document.getElementById("main-content");
+            const viewTitle = document.getElementById("current-view-title");
+
+            // Mobile Responsive Drawer Element Bindings
+            const sidebar = document.getElementById("main-sidebar");
+            const menuToggleBtn = document.getElementById("menu-toggle-btn");
+            const closeSidebarBtn = document.getElementById("close-sidebar-btn");
+            const sidebarOverlay = document.getElementById("sidebar-overlay");
+
+            // 📱 Sidebar Responsive State Management Utilities
+            const openMobileSidebar = () => {
+                sidebar.classList.remove("-translate-x-full");
+                sidebarOverlay.classList.remove("hidden", "pointer-events-none", "opacity-0");
+                sidebarOverlay.classList.add("opacity-100");
+            };
+
+            const closeMobileSidebar = () => {
+                sidebar.classList.add("-translate-x-full");
+                sidebarOverlay.classList.remove("opacity-100");
+                sidebarOverlay.classList.add("opacity-0", "pointer-events-none");
+                setTimeout(() => {
+                    if(sidebar.classList.contains("-translate-x-full")) {
+                        sidebarOverlay.classList.add("hidden");
+                    }
+                }, 300);
+            };
+
+            menuToggleBtn.addEventListener("click", openMobileSidebar);
+            closeSidebarBtn.addEventListener("click", closeMobileSidebar);
+            sidebarOverlay.addEventListener("click", closeMobileSidebar);
+
+            // Tab Switching Core Engine Function (Upgraded for Adaptive Close Actions)
+            const switchTab = async (targetModule, buttonElement) => {
+                // UI Sidebar active states update
+                navButtons.forEach(btn => btn.classList.remove("nav-active"));
+                if (buttonElement) {
+                    buttonElement.classList.add("nav-active");
+                    viewTitle.textContent = buttonElement.querySelector("span").textContent;
+                }
+
+                // Auto-collapse navigation panel drawer instantly when a route selection triggers on small viewports
+                closeMobileSidebar();
+
+                // Render dynamic loader inside content area
+                mainContent.innerHTML = `
+                    <div class="flex flex-col items-center justify-center h-96 text-gray-500">
+                        <div class="w-7 h-7 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mb-3"></div>
+                        <p class="text-[10px] tracking-widest uppercase font-mono">Fetching pipeline updates...</p>
+                    </div>
+                `;
+
+                // Safe Execution Call Router Lifecycle
+                try {
+                    if (window.AppModules && typeof window.AppModules[targetModule] === "function") {
+                        await window.AppModules[targetModule]();
+                    } else {
+                        throw new Error(`Module handler 'js/modules/${targetModule}.js' not found or failed to initialize.`);
+                    }
+                } catch (error) {
+                    console.error(`Tab router failure [${targetModule}]:`, error);
+                    mainContent.innerHTML = `
+                        <div class="glass-panel rounded-2xl p-6 border border-red-500/20 bg-red-500/5 text-center max-w-xl mx-auto mt-12 shadow-2xl">
+                            <i class="fa-solid fa-triangle-exclamation text-red-400 text-xl mb-2"></i>
+                            <h3 class="text-xs font-bold text-white uppercase tracking-wider">Component Load Error</h3>
+                            <p class="text-[11px] text-gray-400 mt-1 font-mono">${error.message}</p>
+                            <button onclick="location.reload()" class="mt-4 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-[10px] font-semibold uppercase tracking-wider text-blue-400 rounded-lg transition border border-slate-800">Reload Panel</button>
+                        </div>
+                    `;
+                }
+            };
+
+            // Bind click triggers to sidebar items
+            navButtons.forEach(btn => {
+                btn.addEventListener("click", () => {
+                    const target = btn.getAttribute("data-target");
+                    if (target) switchTab(target, btn);
+                });
+            });
+
+            // Default fallback safe trigger: Load overview on start
+            setTimeout(() => {
+                const defaultBtn = document.querySelector('button[data-target="overview"]');
+                if (defaultBtn) switchTab("overview", defaultBtn);
+            }, 800); 
+        });
+    </script>
+</body>
+</html>

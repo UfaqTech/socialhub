@@ -1,13 +1,72 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>My Google AI Studio App</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
-</html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UfaqTech SocialHub - Admin Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="text-gray-200 min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
 
+    <div class="absolute top-[-20%] left-[-10%] w-[500px] h-[500px] bg-blue-900/20 rounded-full blur-[120px] pointer-events-none"></div>
+    <div class="absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] bg-indigo-900/20 rounded-full blur-[120px] pointer-events-none"></div>
+
+    <div class="w-full max-w-md glass-panel rounded-2xl p-8 shadow-2xl relative z-10">
+        
+        <div class="text-center mb-8">
+            <div class="inline-flex items-center justify-center w-14 h-14 rounded-xl bg-blue-600/10 border border-blue-500/30 text-blue-500 text-2xl mb-3 shadow-lg shadow-blue-500/10">
+                <i class="fa-solid fa-shield-halved"></i>
+            </div>
+            <h1 class="text-2xl font-bold text-white tech-heading tracking-wide">UfaqTech</h1>
+            <p class="text-xs text-gray-400 mt-1 uppercase tracking-widest">SocialHub Admin Control</p>
+        </div>
+
+        <div id="alert-box" class="hidden mb-5 p-3 rounded-xl border text-sm flex items-start gap-3 bg-red-500/10 border-red-500/20 text-red-400">
+            <i class="fa-solid fa-circle-exclamation mt-0.5"></i>
+            <span id="alert-message">Invalid credentials or unauthorized access level.</span>
+        </div>
+
+        <form id="login-form" class="space-y-5">
+            <div>
+                <label class="block text-xs font-medium text-gray-400 uppercase tracking-wider mb-2">Admin Email</label>
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-gray-500">
+                        <i class="fa-solid fa-envelope"></i>
+                    </span>
+                    <input type="email" id="email" required autocomplete="email"
+                        class="w-full pl-10 pr-4 py-3 bg-slate-900/60 border border-slate-700/50 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition" 
+                        placeholder="admin@ufaqtech.com">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-medium text-gray-400 uppercase tracking-wider mb-2">Secure Password</label>
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-gray-500">
+                        <i class="fa-solid fa-lock"></i>
+                    </span>
+                    <input type="password" id="password" required autocomplete="current-password"
+                        class="w-full pl-10 pr-4 py-3 bg-slate-900/60 border border-slate-700/50 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition" 
+                        placeholder="••••••••••••">
+                </div>
+            </div>
+
+            <button type="submit" id="btn-submit"
+                class="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-medium rounded-xl transition shadow-lg shadow-blue-600/20 active:scale-[0.99] flex items-center justify-center gap-2">
+                <span>Verify & Access Dashboard</span>
+                <i class="fa-solid fa-arrow-right text-xs"></i>
+            </button>
+        </form>
+
+        <footer class="mt-8 text-center text-xs text-gray-500 border-t border-slate-800/60 pt-4">
+            &copy; 2026 UfaqTech Systems. All rights reserved.
+        </footer>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-client.js"></script>
+    <script src="js/auth.js"></script>
+</body>
+</html>

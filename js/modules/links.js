@@ -66,8 +66,8 @@ window.AppModules.links = async function() {
         }
     };
 
-    // 2. Prefill Form Data for Editing
-    const initEditorDataPrefill = (link) => {
+    // 2. Prefill Form Data for Editing from the latest Supabase record
+    const initEditorDataPrefill = async (link) => {
         document.getElementById("edit-id").value = link.id;
         document.getElementById("edit-image").value = link.image_url || '';
         document.getElementById("edit-title").value = link.title || '';
@@ -79,7 +79,22 @@ window.AppModules.links = async function() {
         document.getElementById("edit-members").value = link.member_count || 0;
 
         populateSubtypeOptions();
+        await loadCategoriesDropdownOptions(link.category || '');
+        updateLivePreview();
         toggleModalVisibility();
+    };
+
+    const loadLinkEditorData = async (linkId) => {
+        const { data: liveLink, error } = await supabase
+            .from('links')
+            .select('*')
+            .eq('id', linkId)
+            .maybeSingle();
+
+        if (error) throw error;
+        if (!liveLink) throw new Error('The selected link could not be found in Supabase.');
+
+        await initEditorDataPrefill(liveLink);
     };
 
     // 3. Dynamic Live Card Preview Renderer Engine
@@ -152,11 +167,11 @@ window.AppModules.links = async function() {
     };
 
     // 4. Populate Dynamic Categories Dropdown Option List
-    const loadCategoriesDropdownOptions = async () => {
+    const loadCategoriesDropdownOptions = async (selectedValue = '') => {
         const categorySelect = document.getElementById("edit-category");
         if (!categorySelect) return;
 
-        const currentValue = categorySelect.value || '';
+        const currentValue = selectedValue || categorySelect.value || '';
 
         try {
             const { data: categoriesData, error } = await supabase
@@ -183,6 +198,10 @@ window.AppModules.links = async function() {
                 <option value="" disabled ${!currentValue ? 'selected' : ''}>Select Category Matrix</option>
                 ${mergedCategories.map(cat => `<option value="${cat.value}" ${currentValue === cat.value ? 'selected' : ''}>${cat.label}</option>`).join('')}
             `;
+
+            if (currentValue) {
+                categorySelect.value = currentValue;
+            }
         } catch (err) {
             console.error("Failed to compile category elements:", err);
             categorySelect.innerHTML = `<option value="" disabled>Error loading options</option>`;
@@ -368,7 +387,14 @@ window.AppModules.links = async function() {
                         const id = btn.getAttribute('data-id');
                         if (action === 'edit') {
                             const targetedLink = linksData.find(l => l.id == id);
-                            if (targetedLink) initEditorDataPrefill(targetedLink);
+                            if (targetedLink) {
+                                try {
+                                    await loadLinkEditorData(targetedLink.id);
+                                } catch (err) {
+                                    console.error('Failed to fetch live link data:', err);
+                                    alert(`Unable to load live link data: ${err.message}`);
+                                }
+                            }
                         } else {
                             await handleAction(id, action);
                         }
@@ -466,11 +492,17 @@ window.AppModules.links = async function() {
                                     </select>
                                 </div>
                             </div>
-                            <div>
+                                            <div>
                                 <label class="block text-[10px] uppercase tracking-wider text-gray-400 font-semibold mb-1">Category Select Mapping</label>
                                 <select id="edit-category" required class="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-xs text-white focus:border-blue-500 focus:outline-none">
                                     <option value="" disabled selected>Loading Matrix...</option>
                                 </select>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <button type="button" id="btn-refresh-live" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-gray-300 hover:text-white text-[10px] font-semibold uppercase tracking-wider rounded-lg border border-slate-700 transition">
+                                    <i class="fa-solid fa-rotate-right mr-1"></i>Refresh Live Data
+                                </button>
+                                <span class="text-[10px] text-gray-500">Live values are fetched directly from Supabase.</span>
                             </div>
                             <div>
                                 <label class="block text-[10px] uppercase tracking-wider text-gray-400 font-semibold mb-1">Member Metrics Enrollment Count</label>
@@ -524,6 +556,21 @@ window.AppModules.links = async function() {
 
         loadCategoriesDropdownOptions();
         populateSubtypeOptions();
+
+        document.getElementById('btn-refresh-live').addEventListener('click', async () => {
+            const currentId = document.getElementById('edit-id').value;
+            if (!currentId) {
+                alert('Open a link first so the editor can refresh its live values.');
+                return;
+            }
+
+            try {
+                await loadLinkEditorData(currentId);
+            } catch (err) {
+                console.error('Live refresh failed:', err);
+                alert(`Live refresh failed: ${err.message}`);
+            }
+        });
 
         // Attach layout preview triggers
         ['edit-url', 'edit-image', 'edit-title', 'edit-desc', 'edit-members'].forEach(fieldId => {
@@ -624,6 +671,35 @@ window.AppModules.links = async function() {
         });
     };
 
+    const subscribeToLinksChanges = async () => {
+        try {
+            if (window.__socialhubLinkSubscription) return;
+
+            const channel = supabase.channel('socialhub-links-realtime');
+            channel.on('postgres_changes', { event: '*', schema: 'public', table: 'links' }, async (payload) => {
+                await fetchCards();
+                const currentId = document.getElementById('edit-id')?.value;
+                const modal = document.getElementById('edit-link-modal');
+                if (!currentId || !modal || !modal.classList.contains('hidden')) return;
+
+                const changedId = payload.new?.id ?? payload.old?.id;
+                if (String(changedId) === String(currentId)) {
+                    try {
+                        await loadLinkEditorData(currentId);
+                    } catch (err) {
+                        console.error('Realtime editor refresh failed:', err);
+                    }
+                }
+            });
+
+            await channel.subscribe();
+            window.__socialhubLinkSubscription = channel;
+        } catch (err) {
+            console.error('Realtime link subscription failed:', err);
+        }
+    };
+
     renderLayout();
     await fetchCards();
+    await subscribeToLinksChanges();
 };
